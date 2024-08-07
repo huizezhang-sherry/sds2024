@@ -1,0 +1,936 @@
+---
+title: "Switching between space and time: Spatio-temporal analysis with cubble"
+author: "H. Sherry Zhang " 
+institute: "University of Texas at Austin" 
+date: "2024 Oct 18"
+format: 
+  revealjs:
+    scrollable: true
+    slide-number: true
+    show-slide-number: all
+    aspectratio: 169
+    theme: serif
+    preview-links: auto
+    multiplex: true
+    pdf-separate-fragments: true
+    css: style.css
+    footer: "https://sherryzhang-sds2024.netlify.app"
+title-slide-attributes: 
+  data-background-image: figures/logo.png
+  data-background-size: 7%
+  data-background-position: 98% 98%
+editor_options: 
+  chunk_output_type: console
+# include-in-header:
+#   - text: |
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup}
+#| include: false  
+library(knitr)
+options(htmltools.dir.version = FALSE)
+opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, 
+               error = FALSE, fig.align = "center")
+#wide_width <-  100
+options(pillar.print_max = 5, 
+        pillar.print_min = 5
+        #width = wide_width
+        )
+#remotes::install_github('coolbutuseless/ggsvg')
+#devtools::install_github("r-for-educators/flair")
+library(tidyverse)
+library(sf)
+library(ggsvg)
+library(ozmaps)
+library(cubble)
+library(patchwork)
+library(tsibble)
+library(flair)
+library(stars)
+library(tidyverse)
+library(tidyindex)
+library(lmomco)
+library(lubridate)
+library(SPEI)
+library(GGally)
+library(patchwork)
+library(tsibble)
+library(lubridate)
+```
+
+```{css, echo=FALSE}
+.form-allowed-tags {
+  display: none;
+}
+```
+
+Spatio-temporal data can mean different things and today we
+will talk about vector data.
+
+```{r}
+set.seed(123)
+aus_stations <- cubble::climate_aus |> sample_n(size = 50)
+oz_simp <- ozmaps::abs_ste %>% 
+  filter(NAME != "Other Territories") |> 
+  rmapshaper::ms_simplify(keep = 0.05) 
+vector <- ggplot() +
+  geom_sf(data = oz_simp, fill = "grey95", color = "white") +
+  geom_point(data = aus_stations, aes(long,lat)) + 
+  ggthemes::theme_map() + 
+  ggtitle("Vector: Australia weather station locations")
+tif = system.file("tif/L7_ETMs.tif", package = "stars")
+x = read_stars(tif)
+x <- x[,,,1:3] |> st_rgb()  # x contains colors as pixel values
+raster <- ggplot() + 
+  geom_stars(data = x) + 
+  theme_void() + 
+  ggtitle("Satellite data: Landsat 7 ETM") 
+trajectory <- dplyr::storms %>% 
+  filter(status == "hurricane") %>% 
+  ggplot(aes(x = long, y = lat, group = interaction(name, year))) + 
+  geom_path(size = 0.5) + 
+  theme_bw() + 
+  ggtitle("Trajectory: Atlantic hurricane paths") 
+```
+
+```{r}
+vector | raster | trajectory
+```
+
+::: notes
+Here we have three different types: vector, raster, trajectory data
+(explain each)
+
+vector data have time series measured at a collection of locations
+
+satellite images use gridded cells to represent a continuous space and each
+cell, or pixel, has variables or bands measured at different time points.
+
+There is also trajectory data where points are moving in the space and
+time in the same time. Here we have an example of Atlantic hurricane paths.
+
+In my talk today, we will focus on vector data.
+:::
+
+## 
+
+```{r}
+#| out-height: 50%
+knitr::include_graphics(here::here("figures/motivation.png"))
+```
+. . .
+
+Cubble is a nested object built on tibble that allow easy pivoting
+between spatial and temporal aspect of the data.
+
+
+## 
+
+```{r}
+#| out-width: 100%
+knitr::include_graphics(here::here("figures/cubble-operations.png"))
+```
+
+::: notes
+-   Today I will introduce a new data structure, called cubble, for
+    vector spatio-temporal data
+
+-   in short, cubble is a nested object built on tibble that allow easy
+    pivoting between spatial and temporal form.
+
+-   we will first talk about how the two forms look like and then how
+    you cna pivot beween them for different tasks.
+
+-   In the nested form, spatial variables are in columns out and
+    temporal variables are nested into a list column called `ts`
+
+-   In the long form, the time series data are shown in columns and each
+    row is cross identified by the site and date in a long table
+
+<!-- ## [Cubble: a spatio-temporal vector data structure]{.r-fit-text} -->
+
+-   The pair `face_temporal()` and `face_spatial()` to switch the cubble
+    between the two forms.
+
+-   With `face_temporal()`, the focus of the data is now on the temporal
+    face of the spatio-temporal cube and this corresponds to switch the
+    data to the long form.
+
+-   With `face_spatial()`, the long cubble is switched back to the
+    nested form, the spatial face of the datacube.
+:::
+
+## Australian weather station data {.smaller}
+
+```{r echo = FALSE}
+stations <- cubble::climate_aus |> 
+  rowwise() %>% 
+  filter(nrow(ts) == 366, id != "ASN00014517") %>% 
+  as_tibble() %>% 
+  filter(row_number() %% 7 == 1) %>% 
+  select(-ts) |> 
+  sf::st_as_sf(coords = c("long", "lat"), crs = "EPSG:4326") 
+
+temperature <- cubble::climate_aus  %>% 
+  face_temporal() %>% 
+  as_tibble() %>% 
+  filter(id %in% stations$id) |> 
+  as_tsibble(index = date, key = id)
+```
+
+::: columns
+::: {.column width="60%"}
+```{r}
+#| echo: true
+stations
+```
+
+```{r data-stations}
+#| echo: false
+#| eval: true
+ggplot() +
+  geom_sf(data = oz_simp, fill = "grey95", color = "white") +
+  geom_sf(data = stations) + 
+  ggthemes::theme_map()
+```
+:::
+
+::: {.column width="40%"}
+```{r}
+#| echo: true
+temperature
+```
+
+```{r data-ts}
+temperature %>% 
+  ggplot() +
+  geom_line(aes(x = date, y = tmax, group = id), alpha = 0.4) + 
+  theme_bw()
+```
+:::
+:::
+
+::: notes
+-   Let's put these in a data context.
+
+-   The `stations` data records 30 Australia weather stations, along
+    with their longitude, latitude, elevation, and name
+
+\[breath\]
+
+-   On the temporal side, we have precipitation, maximum and minimum
+    temperature collected daily for each station in 2020.
+:::
+
+## Create a cubble 
+
+```{r echo = TRUE}
+(weather <- make_cubble(spatial = stations, temporal = temperature))
+```
+
+:::{.smaller}
+Read from the header: 
+
+1) the spatial cubble is an `sf` object, 2) bbox and CRS, 3) available temporal variables and their types
+
+:::
+
+::: notes
+-   To cast the two separate tables into a cubble, you can supply them
+    in a named list.
+
+-   You also need to tell cubble some identifiers it looks for
+
+-   The `key` argument is the spatial identifier that connects the two
+    tables.
+
+-   The `index` argument is the temporal identifier that prescribes the
+    timestamp.
+
+-   The `coords` argument is to used to specify the coordinate
+
+\[breath\]
+
+-   From the cubble header, you can read that the key is `id`, there are
+    30 stations and it is in the nested form.
+
+-   The third line here shows you the available temporal variables and
+    their types.
+
+-   Also, if the spatial and temporal data is an sf or tsibble object,
+    they will be indicated in the header as well.
+:::
+
+## Spatial cubble
+
+```{r echo = TRUE}
+class(weather)
+```
+
+Change the map projection: 
+
+```{r echo = TRUE}
+weather |> sf::st_transform(crs = "EPSG:3857")
+```
+
+
+## Temporal cubble {.smaller}
+
+```{r face-temporal, echo = TRUE}
+(weather_long <- weather |> face_temporal())
+class(weather_long)
+weather_long |> has_gaps()
+```
+
+::: notes
+-   Here is what a cubble look like when being switched between the long
+    and the nested form.
+
+  -   With the `weather` object we just created, we turn it into the
+        long form with the function `face_temporal()`
+
+-   Notice that the third line in the header now changes to see the
+    available spatial variables
+
+:::
+
+## Functionalities implemented 
+
+![](figures/cubble-functions.png)
+
+## Glyph map {.smaller .center background-image="figures/glyph-bg.png" background-size="60%" background-position="right"}
+
+- `geom_glyph`
+- `geom_glyph_box`
+- `geom_glyph_line`
+
+## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
+
+```{r}
+#| fig.width: 15
+#| fig.height: 7
+
+library(GGally)
+out <- GGally::nasa %>% 
+  group_split(long, lat) %>% 
+  map_dfr(~lm(surftemp ~ year + factor(month), data = .x) %>% broom::augment(.x)) %>% 
+  mutate(diff = surftemp - .fitted)
+  
+library(sf)
+nasa_bbox <- out %>% st_as_sf(coords = c("long", "lat")) %>% st_bbox()
+coastline <- rnaturalearth::ne_coastline(returnclass = "sf") %>% st_crop(nasa_bbox)
+facet_plot <- out %>% 
+  ggplot() +
+  geom_tile(aes(x = long, y = lat, fill = diff)) + 
+  geom_sf(data = coastline, color = "grey") + 
+  scale_fill_gradient2(midpoint = 0, mid = "white", high = "red", 
+                       low = "blue", name = "De-seasonalized \n temperature") + 
+  scale_y_continuous(breaks = c(-20, 0, 20, 40)) + 
+  scale_x_continuous(breaks = c(-110, -70)) +
+  facet_grid(year ~ factor(month.abb[month],levels=month.abb)) + 
+  coord_sf()
+
+map_data <- rnaturalearth::ne_countries(returnclass = "sf") %>%
+  filter(continent %in% c("North America", "South America")) %>%
+  st_set_crs(st_crs(nasa)) %>% 
+  st_crop(nasa_bbox)
+
+glyph_plot <- out %>%
+  ggplot() + 
+  geom_sf(data = map_data, color = "grey", fill = "grey") + 
+  geom_glyph(aes(x_major = long, y_major = lat, 
+                 x_minor = time, y_minor = diff), width = 2, height = 2) + 
+  coord_sf()
+  
+facet_plot
+```
+
+::: footer
+Modified from *Glyph-maps for Visually Exploring Temporal Patterns in
+Climate Data and Models* (Wickham, 2012)
+:::
+
+::: notes
+Here is a typical plot you may have seen when someone tries to visualise
+their spatio-temporal data. The x and y axes are the coordinates, here I
+simplify it with only two points, but in reality you may see a
+collection of points in space or a raster image. Each facet here shows
+the space in different timestamp and the values are mapped into color.
+
+The problem of this type of visualisation is that it becomes difficult
+to comprehend the temporal structure of the data since you have to
+compare points at the same location across panels to digest the pattern.
+:::
+
+::: notes
+Instead the temporal pattern is much easier to observe if shown in a
+time series plot.
+
+What a glyph map do is to put the time series glyph in the place of the
+location, so you can see the temporal trend in the space.
+:::
+
+```{r eval = FALSE}
+#| fig.height: 3
+out %>% filter(time %in% c(1, 2, 3)) %>%
+  ggplot() +
+  geom_tile(aes(x = long, y = lat, fill = diff)) + 
+  geom_sf(data = coastline, color = "grey") + 
+  scale_fill_gradient2(midpoint=0, mid="white", high="red", low="blue", name = "temp. resid.") + 
+  scale_y_continuous(breaks = c(-20, 0, 20, 40)) + 
+  scale_x_continuous(breaks = c(-110, -70)) +
+  facet_grid(year ~ month) + 
+  coord_sf() + 
+  ggtitle("De-seasonalized temperature")
+
+out |> filter(x == 12, y == 12) |>
+  ggplot() +
+  geom_line(aes(x = date, y = diff)) +
+  theme_bw() + 
+  ylab("temp. resid.") + 
+  theme(axis.title = element_text(size = 20),
+        axis.text = element_text(size = 20))
+
+```
+
+## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
+
+![](figures/glyph1.png)
+
+
+## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
+
+![](figures/glyph2.png)
+
+
+## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
+
+```{r}
+#| fig.width: 15
+#| fig.height: 7
+facet_plot
+```
+
+
+## Glyph map: linear transformation
+
+```{r}
+knitr::include_graphics(here::here("figures/glyph-steps.png"))
+```
+
+```{r eval = FALSE, echo = TRUE}
+DATA %>%
+  ggplot() +
+  geom_glyph(
+    aes(x_major = X_MAJOR, x_minor = X_MINOR,
+        y_major = Y_MAJOR, y_minor = Y_MINOR)) +
+  ...
+```
+
+::: footer
+<https://huizezhang-sherry.github.io/cubble/articles/glyph.html>
+:::
+
+::: notes
+-   I have a short illustration to show you how the transformation works
+
+-   Here (1) shows a single station on the map with its long and lat
+    coordinate and (2) is its associated time series.
+
+-   Here you know the range of your x and y axis and you can use linear
+    algebra to transform them into a different scale.
+
+-   In step (3), the time series in still the same but its scale has
+    been transformed to a width of 1 and heights of 0.3 and the center
+    in this scale is where the original point lays.
+
+-   Once we have the time series in the transformed axes, they can be
+    placed onto the map as in (4)
+
+-   To make a glyph map, you can use the `geom_glyph` function from the
+    cubble package.
+
+-   It requires a pair of major and a pair of minor variable as required
+    aesthetics
+
+-   The major variable are the spatial coordinates, long and lat here
+    and the minor variable are the temporal coordinates, date and tmax
+    here.
+:::
+
+## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+
+```{r echo = TRUE}
+cb <- make_cubble(spatial = stations, temporal = temperature)
+
+(cb_glyph <- cb %>%
+  face_temporal() %>%
+  tsibble::index_by(month = lubridate::month(date)) |> 
+  summarise(tmax = mean(tmax, na.rm = TRUE)) %>%
+  unfold(long, lat)
+)
+```
+
+## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+
+:::r-stack
+
+```{r}
+#| fig-width: 15
+#| fig-height: 6
+cb_tbl <- cb_glyph |> as_tibble() |> filter(!is.na(tmax), id != "ASN00067033")
+p1 <- cb_tbl |> ggplot(aes(x = month, y = tmax, group = id, color = tmax)) +
+  geom_line() +
+  scale_x_continuous(breaks = 1:12, labels = month.abb) + 
+  scale_color_distiller(palette = "OrRd", direction = 1) +
+  theme_bw() + 
+  theme(panel.grid = element_blank(), legend.position = "bottom")
+
+p2 <- cb_tbl %>% 
+  ggplot(aes(x = long, y = lat, color = tmax)) +
+  geom_sf(data = oz_simp, fill = "grey90",
+          color = "white", inherit.aes = FALSE) +
+  scale_color_distiller(palette = "OrRd", direction = 1) +
+  geom_point() + 
+  ggthemes::theme_map()
+
+(p1 | p2) &
+  theme(legend.position='bottom')
+```
+
+![](figures/wrong-way-go-back.png){.fragment height="450"}
+
+:::
+
+
+## [Example: averaged max temperature by month in Australia]{.r-fit-text}
+
+::::columns
+
+::: {.column width="40%"}
+
+```{r}
+#| fig-width: 4
+#| fig-height: 6
+cb_tbl <- cb_glyph |> as_tibble()
+group1_id <- cb_tbl |> filter(lat > -15) |> pull(id) |> unique()
+group2_id <- cb_tbl |> filter(month == 6, tmax > 27) |> pull(id)
+group3_id <- cb_tbl |> filter(month == 1, tmax > 35) |> pull(id)
+group3_id <- group3_id[!(group3_id %in% group2_id)]
+group4_id <- cb_tbl |> filter(lat < -40) |> pull(id) |> unique()
+
+cb_grp <- cb_glyph |> 
+  as_tibble() |>
+  mutate(group = case_when(
+    id %in% group1_id ~ "Far north",
+    id %in% group2_id ~ "North",
+    id %in% group3_id ~ "In land",
+    id %in% group4_id  ~ "Tasmania",
+    TRUE ~ NA_character_
+  ),
+  group = factor(group, levels = c("Far north", "North", "In land", "Tasmania")))
+
+cb_grp |>
+  filter(!is.na(group)) |> 
+  ggplot(aes(x = month, y = tmax, group = id)) +
+  geom_line(data = cb_grp |> select(-group) , color = "grey80") + 
+  geom_line(data = cb_grp |> filter(!is.na(group)), aes(color = group)) + 
+  scale_x_continuous(breaks = 1:12, labels = month.abb) + 
+  scale_color_brewer(palette = "Dark2") +
+  facet_wrap(vars(group), ncol = 1) + 
+  theme_bw() + 
+  theme(panel.grid = element_blank(), legend.position = "bottom")
+```
+
+:::
+
+:::{.column width="60%"}
+
+```{r}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 8
+cb_grp %>% 
+  ggplot(aes(x_major = long, x_minor = month,
+             y_major = lat, y_minor = tmax, group = id, color = group)) +
+  geom_sf(data = oz_simp, fill = "grey90",
+          color = "white", inherit.aes = FALSE) +
+  geom_glyph_box(width = 1.5, height = 0.8) + 
+  geom_glyph(aes(color = group), width = 1.5, height = 0.8) + 
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "grey70")) +
+  ggthemes::theme_map()
+```
+
+:::
+::::
+
+## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+
+::::columns
+
+::: {.column width="50%"}
+
+```{r eval = FALSE, echo = TRUE}
+DATA %>% 
+  ggplot(aes(x_major = long, 
+             x_minor = month,
+             y_major = lat, 
+             y_minor = tmax, 
+             group = id,
+             color = group)) +
+  geom_sf(data = oz_simp, 
+          ...
+          inherit.aes = FALSE) +
+  geom_glyph_box(width = 1.5, 
+                 height = 0.8) + 
+  geom_glyph(width = 1.5,
+             height = 0.8) + 
+  ...
+```
+
+:::
+
+:::{.column width="50%"}
+
+```{r}
+#| echo: false
+#| fig-width: 8
+#| fig-height: 8
+cb_grp %>% 
+  ggplot(aes(x_major = long, x_minor = month,
+             y_major = lat, y_minor = tmax, group = id, color = group)) +
+  geom_sf(data = oz_simp, fill = "grey90",
+          color = "white", inherit.aes = FALSE) +
+  geom_glyph_box(width = 1.5, height = 0.8) + 
+  geom_glyph(width = 1.5, height = 0.8) + 
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "grey70")) +
+  ggthemes::theme_map()
+```
+
+:::
+::::
+
+
+## Extensions to line glyphs {.smaller background-image="figures/glyph-extensions.png" background-size="60%" background-position="50% 70%"}
+
+*From Google Summer of Code this year...*
+
+<!-- ![](figures/glyph-extensions.png){fig-align="center"} -->
+
+
+## Indexes
+
+::: r-stack
+![](figures/indexes.png){.fragment height="600"}
+
+![](figures/wrong-way-go-back.png){.fragment height="450"}
+:::
+
+::: notes
+Indexes are very commonly used to reduce multivariate information into a single number for problems such as monitoring climate, economy, health and social progress.
+
+Initially we are intend to study how different indexes combine multivariate information, after reading the literature on drought indexes, we find it interesting when looking at the pipeline of how these indexes are computed
+:::
+
+## [Sport climbing in the Olympic Games `r emo::ji("climber")`]{.r-fit-text} {.smaller}
+
+*2020 Tokyo version*
+
+::: {layout-ncol="3"}
+![Boulder: 4m wall, 3 problems in final](figures/climbing-boulder.jpeg){height="90%"}
+
+![Lead: 15m wall, 1 problem](figures/climbing-lead.jpeg){height="90%"}
+
+![Speed: 15m wall, always the same](figures/climbing-speed.jpeg){height="70%"}
+:::
+
+## Three disciplines, one gold medal {.smaller}
+
+In Tokyo 2020, athletes are ranked from 1 to 8 (top - bottom) in each discipline. The final score is the multiplication of the ranks in each discipline.
+
+
+| Athletes            | Country  | Speed | Boulder | Lead | Total | Rank |
+|---------------------|----------|-------|---------|------|-------|------|
+| Janja Garnbret      | Slovenia | 5     | 1       | 1    | 5     | 1    |
+| Miho Nonaka         | Japan    | 3     | 3       | 5    | 45    | 2    |
+| Akiyo Noguchi       | Japan    | 4     | 4       | 4    | 64    | 3    |
+| Aleksandra Miroslaw | Poland   | 1     | 8       | 8    | 64    | 4    |
+| ...                 | ...      | .     | .       | .    | ..    | ..   |
+
+. . .
+
+Aleksandra Miroslaw gets 4th despite ranked last in both boulder and lead: 
+
+  - 0/3 in boulder problems (0T0Z)
+  - scored 9/40 points in the lead (as compared to others: 13, 20, 21, 29, 34, 35, 37)
+
+But she could win a medal if she performs better in the qualification round.
+
+## [Hence this year, sport climbing has two medals]{.r-fit-text} {.smaller}
+
+  - speed +  boulder and lead combined
+  - boulder-and-lead combined has 200 points, each discipline worth 100 points:
+      - boulder: 25 points x 4 problems, partial points of 5 and 10 for zone 1 and zone2
+      - lead: counting from the top, the last 10 moves - 4 points each, the previous 10 moves - 3 points each, ... (4 x 10 + 3 x 10 + 2 x 10 + 10 = 100)
+
+. . .
+
+The game is on this week, but 1/4am PT `r set.seed(1234); emo::ji("sad")`...
+
+## Inspired from tidymodel
+
+![](figures/tidymodel.png){.fragment height="500" width="1000"}
+
+## [A closer look at a class of drought indexes]{.r-fit-text} {background-image="figures/index-overview.png" background-size="65%" background-position="50% 60%"}
+
+::: notes
+The most commonly used drought index is called SPI,
+
+A huge collection of literature proposes drought indexes on top of SPI to improve the monitoring.
+
+All these indexes resemble each other but they all implemented differently by different research groups.
+
+It is similar to the situation that initially different machine learning methods are proposed by different research groups, and then tidymodel comes in to unite them all under the same workflow.
+
+It would be nice if the pipeline to construct indexes look like this
+:::
+
+## The pipeline design (9 modules) {.smaller}
+
+::: columns
+::: column
+*data with spatial (*$\mathbf{s}$) and temporal ($\mathbf{t}$) dimensions: $$x_j(s;t)$$
+
+-   **Temporal processing**: $f[x_{sj}(t)]$
+-   **Spatial processing**: $g[x_{tj}(s)]$
+
+<br>
+
+-   **Variable transformation**: $T[x_j(s;t)]$
+-   **Scaling**: $[x_j(s;t)- \alpha]/\gamma$
+:::
+
+::: column
+-   **Distribution fit**: $F[x_j(s;t)]$
+-   **Normalising**: $\Phi^{-1}[x_j(s;t)]$
+
+<br>
+
+-   **Dimension reduction**: $h[\mathbf{x}(s;t)]$
+-   **Benchmarking**: $u[x(s;t)]$
+-   **Simplification**
+
+```{=tex}
+\begin{equation}
+\begin{cases}
+C_0 & c_1 \leq x(\mathbf{s};\mathbf{t}) < c_0 \\
+C_1 & c_2 \leq x(\mathbf{s};\mathbf{t}) < c_1 \\
+\cdots \\
+C_z & c_z \leq x(\mathbf{s};\mathbf{t})
+\end{cases}
+\end{equation}
+```
+:::
+:::
+
+::: notes
+In this project, we identify 9 modules that are used to construct indexes from literature in different domains.
+
+We also develop software implementation for some of the modules. These are modules in the sense that there could be different ways to transform one variable into another, but they can also sit under the variable transformation module. In the next slide, I will mention an example of this.
+:::
+
+## Software design
+
+```{r eval = FALSE, echo=TRUE}
+DATA |>
+  module1(...) |>
+  module2(...) |>
+  module3(...) |>
+  ...
+
+dimension_reduction(V1 = aggregate_linear(...))
+dimension_reduction(V2 = aggregate_geometrical(...))
+dimension_reduction(V3 = aggregate_manual(...))
+```
+
+The `aggregate_*()` function can be evaluated as a standalone recipe, before evaluated with the data in the dimension reduction module:
+
+```{r eval = TRUE, echo=TRUE}
+aggregate_manual(~x1 + x2)
+```
+
+## Pipeline for two drought indexes 
+
+::: panel-tabset
+### SPI
+
+```{r}
+#| eval: false
+#| echo: true
+data %>%                         # data contain `prcp`
+  aggregate(                     # step 1: temporal aggregation
+    .var = prcp,                 #         aggregate `prcp` with time scale
+    .scale = .scale) %>%         #         to create `.agg`, by default
+  dist_fit(.dist = .dist,        # step 2: distribution fit
+           .method = "lmoms",    #         using L-moment to fit `.dist`
+           .var = .agg) %>%      #         distribution on `.agg`
+  augment(.var = .agg)           # step 3: normalising 
+                                 #         find the normal density for `.agg`
+```
+
+### SPEI
+
+```{r}
+#| eval: false
+#| echo: true
+data %>%                                  # data contain `tavg` and `prcp`
+  var_trans(                              # step 1: variable transformation
+    .method = "thornthwaite",             #         using the thornthwaite function
+    .vars = tavg,                         #         on `tavg` 
+    .new_name = "pet") %>%                #         to create a new variable `pet` 
+  dim_red(diff = prcp - pet) %>%          # step 2: dimension reduction 
+  aggregate(                              # step 3: temporal aggregation
+    .var = diff,                          #         aggregate `diff` with time scale
+    .scale = .scale) %>%                  #         `.scale` to create `.agg`
+  dist_fit(                               # step 4: distribution fit
+    .dist = dist_gev(),                   #         use the gev distribution 
+    .var = .agg,                          #         to fit the variable `.agg`
+    .method = "lmoms") %>%                #         using L-moment        
+  augment(.var = .agg)                    # step 5: normalising 
+                                          #         find the normal density for `.agg`
+```
+:::
+
+::: notes
+What we built with the tidyindex package are the pieces aggregate for temporal aggregation, dist_fit for fitting distribution, and augment for normalising. Users can compose their indexes from the module developed. Also we provide some wrapper for commonly used indexes, for example, the SPI and SPEI with some default parameters.
+:::
+
+## Confidence interval in the SPI {.smaller}
+
+A bootstrap sample of 100 is taken from the aggregated precipitation series to estimate gamma parameters and to calculate the index SPI for the *Texas Post Office* station in Queensland.
+
+::: columns
+::: column
+```{r}
+texas <- queensland |> dplyr::filter(name == "TEXAS POST OFFICE") |> head(1)
+queensland_map <- ozmaps::abs_ste |>  dplyr::filter(NAME == "Queensland") |> 
+  rmapshaper::ms_simplify(keep = 0.02)
+queensland_map |> 
+  ggplot() +
+  geom_sf(fill = "transparent", linewidth = 1) +
+  geom_point(data = queensland |> dplyr::distinct(long, lat, name), 
+             aes(x = long, y = lat), size = 3) +
+  geom_point(data = texas, aes(x = long, y = lat),
+             color = "orange", shape = 18, fill = "orange", size = 7) +  
+  theme_void()
+```
+:::
+
+::: column
+```{r eval = FALSE, echo = TRUE}
+DATA %>%
+  # aggregate monthly precipitation 
+  # with a 24-month window
+  aggregate(
+    .var = prcp, .scale = 24
+    ) %>%
+  # fit a gamma distribution to 
+  # obtain the probability value
+  # [0, 1]
+  dist_fit(
+    .dist = gamma(), .var = .agg, 
+    .n_boot = 100
+    ) %>%
+  # use the inverse CDF to 
+  # convert into z-score
+  augment(.var = .agg)
+```
+:::
+:::
+
+## Confidence interval in the SPI {.smaller}
+
+![80% and 95% confidence interval of the Standardized Precipitation Index (SPI-24) for the Texas post office station, in Queensland, Australia. The dashed line at SPI = -2 represents an extreme drought as defined by the SPI. Most parts of the confidence intervals from 2019 to 2020 sit below the extreme drought line and are relatively wide compared to other time periods. This suggests that while it is certain that the Texas post office is suffering from a drastic drought, there is considerable uncertainty in quantifying its severity, given the extremity of the event.](figures/fig-conf-interval-1.png){width="1000" height="300"}
+
+
+## Global Gender Gap Index{.smaller background-image="figures/gggi-weight.png" background-size="50%" background-position="90% 55%"}
+
+::: {layout-ncol="2"}
+![](figures/gggi.png){height="600," width="400"}
+:::
+
+##  {background-image="figures/idx-tour-static.png" background-size="55%" background-position="right"}
+
+::: columns
+::: {.column width="30%"}
+![](figures/idx-tour.gif){width="100%"}
+:::
+:::
+
+<!-- ## summary {.smaller} -->
+
+<!-- A data pipeline comprising nine modules designed for the construction and analysis of indexes within the tidy framework. -->
+
+<!-- Advantages? -->
+
+<!-- -   quantify uncertainties, and -->
+<!-- -   assess indexes’ robustness, -->
+
+## The team {.center}
+
+::: portrait
+![](https://dicook.github.io/dicook-quarto/dicook-2023.png) Dianne Cook
+:::
+
+::: portrait
+![](https://www.patriciamenendez.com/img/pmg.jpg) Patricia Menéndez
+:::
+
+::: portrait
+![](https://uschilaa.github.io/profile.jpg) Ursula Laa
+:::
+
+::: portrait
+![](https://staff.uic.edu.cn/attachment/images/2022/02/22/image_1645506624_ZXRS6xWr.jpeg)
+Nicolas Langrené
+:::
+
+## `r emo::ji("link")` {.smaller background-image="figures/qrcode.svg" background-size="15%" background-position="top right"}
+
+```{r echo = FALSE, eval = FALSE}
+library(qrcode)
+a <- qr_code("https://sherryzhang-chamber2024.netlify.app/")
+generate_svg(a, filename = "figures/qrcode.svg")
+```
+
+-   this slide:
+    -   {{< fa link >}}: <https://sherryzhang-sds2024.netlify.app>
+    -   {{< fa brands github >}}:
+        <https://github.com/huizezhang-sherry/sds2024>
+-   the `cubble` package:
+    -   {{< fa brands github >}}:
+        <https://huizezhang-sherry.github.io/cubble/>
+    -   CRAN:
+        <https://cran.r-project.org/web/packages/cubble/index.html>
+-   the `tidyindex` package:
+    -   {{< fa brands github >}}: <https://huizezhang-sherry.github.io/tidyindex/>
+    -   CRAN: <https://cran.r-project.org/web/packages/tidyindex/index.html>
+-   paper:
+    -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P.
+        (2024). cubble: An R package for organizing and wrangling
+        multivariate spatio-temporal data. Accepted by the Journal of
+        Statistical Software: <https://arxiv.org/abs/2205.00259>
+     -  Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P. (2024). 
+        A Tidy Framework and Infrastructure to Systematically Assemble Spatio-temporal 
+        Indexes from Multivariate Data. *Journal of Computational and Graphical Statistics*, 
+        1-19. <https://doi.org/10.1080/10618600.2024.2374960>
+
+  
+
+-   
+-   paper:
+   
+
