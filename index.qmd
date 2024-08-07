@@ -67,8 +67,8 @@ library(lubridate)
 }
 ```
 
-Spatio-temporal data can mean different things and today we
-will talk about vector data.
+Spatio-temporal data can mean different things and today we will talk
+about vector data.
 
 ```{r}
 set.seed(123)
@@ -106,11 +106,13 @@ Here we have three different types: vector, raster, trajectory data
 
 vector data have time series measured at a collection of locations
 
-satellite images use gridded cells to represent a continuous space and each
-cell, or pixel, has variables or bands measured at different time points.
+satellite images use gridded cells to represent a continuous space and
+each cell, or pixel, has variables or bands measured at different time
+points.
 
 There is also trajectory data where points are moving in the space and
-time in the same time. Here we have an example of Atlantic hurricane paths.
+time in the same time. Here we have an example of Atlantic hurricane
+paths.
 
 In my talk today, we will focus on vector data.
 :::
@@ -121,11 +123,11 @@ In my talk today, we will focus on vector data.
 #| out-height: 50%
 knitr::include_graphics(here::here("figures/motivation.png"))
 ```
+
 . . .
 
 Cubble is a nested object built on tibble that allow easy pivoting
 between spatial and temporal aspect of the data.
-
 
 ## 
 
@@ -225,17 +227,17 @@ temperature %>%
     temperature collected daily for each station in 2020.
 :::
 
-## Create a cubble 
+## Create a cubble
 
 ```{r echo = TRUE}
 (weather <- make_cubble(spatial = stations, temporal = temperature))
 ```
 
-:::{.smaller}
-Read from the header: 
+::: smaller
+Read from the header:
 
-1) the spatial cubble is an `sf` object, 2) bbox and CRS, 3) available temporal variables and their types
-
+1)  the spatial cubble is an `sf` object, 2) bbox and CRS, 3) available
+    temporal variables and their types
 :::
 
 ::: notes
@@ -270,12 +272,11 @@ Read from the header:
 class(weather)
 ```
 
-Change the map projection: 
+Change the map projection:
 
 ```{r echo = TRUE}
 weather |> sf::st_transform(crs = "EPSG:3857")
 ```
-
 
 ## Temporal cubble {.smaller}
 
@@ -289,23 +290,22 @@ weather_long |> has_gaps()
 -   Here is what a cubble look like when being switched between the long
     and the nested form.
 
-  -   With the `weather` object we just created, we turn it into the
-        long form with the function `face_temporal()`
+-   With the `weather` object we just created, we turn it into the long
+    form with the function `face_temporal()`
 
 -   Notice that the third line in the header now changes to see the
     available spatial variables
-
 :::
 
-## Functionalities implemented 
+## Functionalities implemented
 
 ![](figures/cubble-functions.png)
 
 ## Glyph map {.smaller .center background-image="figures/glyph-bg.png" background-size="60%" background-position="right"}
 
-- `geom_glyph`
-- `geom_glyph_box`
-- `geom_glyph_line`
+-   `geom_glyph`
+-   `geom_glyph_box`
+-   `geom_glyph_line`
 
 ## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
 
@@ -400,11 +400,9 @@ out |> filter(x == 12, y == 12) |>
 
 ![](figures/glyph1.png)
 
-
 ## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
 
 ![](figures/glyph2.png)
-
 
 ## [Background: what are glyph maps and why do you need one?]{.r-fit-text}
 
@@ -413,7 +411,6 @@ out |> filter(x == 12, y == 12) |>
 #| fig.height: 7
 facet_plot
 ```
-
 
 ## Glyph map: linear transformation
 
@@ -461,7 +458,7 @@ DATA %>%
     here.
 :::
 
-## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
 ```{r echo = TRUE}
 cb <- make_cubble(spatial = stations, temporal = temperature)
@@ -474,10 +471,9 @@ cb <- make_cubble(spatial = stations, temporal = temperature)
 )
 ```
 
-## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-:::r-stack
-
+::: r-stack
 ```{r}
 #| fig-width: 15
 #| fig-height: 6
@@ -502,16 +498,12 @@ p2 <- cb_tbl %>%
 ```
 
 ![](figures/wrong-way-go-back.png){.fragment height="450"}
-
 :::
-
 
 ## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-::::columns
-
+::: columns
 ::: {.column width="40%"}
-
 ```{r}
 #| fig-width: 4
 #| fig-height: 6
@@ -544,11 +536,9 @@ cb_grp |>
   theme_bw() + 
   theme(panel.grid = element_blank(), legend.position = "bottom")
 ```
-
 :::
 
-:::{.column width="60%"}
-
+::: {.column width="60%"}
 ```{r}
 #| echo: false
 #| fig-width: 8
@@ -563,16 +553,13 @@ cb_grp %>%
   scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "grey70")) +
   ggthemes::theme_map()
 ```
-
 :::
-::::
+:::
 
-## [Example: averaged max temperature by month in Australia]{.r-fit-text} 
+## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-::::columns
-
+::: columns
 ::: {.column width="50%"}
-
 ```{r eval = FALSE, echo = TRUE}
 DATA %>% 
   ggplot(aes(x_major = long, 
@@ -590,11 +577,9 @@ DATA %>%
              height = 0.8) + 
   ...
 ```
-
 :::
 
-:::{.column width="50%"}
-
+::: {.column width="50%"}
 ```{r}
 #| echo: false
 #| fig-width: 8
@@ -609,17 +594,14 @@ cb_grp %>%
   scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "grey70")) +
   ggthemes::theme_map()
 ```
-
 :::
-::::
-
+:::
 
 ## Extensions to line glyphs {.smaller background-image="figures/glyph-extensions.png" background-size="60%" background-position="50% 70%"}
 
 *From Google Summer of Code this year...*
 
 <!-- ![](figures/glyph-extensions.png){fig-align="center"} -->
-
 
 ## Indexes
 
@@ -630,9 +612,14 @@ cb_grp %>%
 :::
 
 ::: notes
-Indexes are very commonly used to reduce multivariate information into a single number for problems such as monitoring climate, economy, health and social progress.
+Indexes are very commonly used to reduce multivariate information into a
+single number for problems such as monitoring climate, economy, health
+and social progress.
 
-Initially we are intend to study how different indexes combine multivariate information, after reading the literature on drought indexes, we find it interesting when looking at the pipeline of how these indexes are computed
+Initially we are intend to study how different indexes combine
+multivariate information, after reading the literature on drought
+indexes, we find it interesting when looking at the pipeline of how
+these indexes are computed
 :::
 
 ## [Sport climbing in the Olympic Games `r emo::ji("climber")`]{.r-fit-text} {.smaller}
@@ -640,17 +627,20 @@ Initially we are intend to study how different indexes combine multivariate info
 *2020 Tokyo version*
 
 ::: {layout-ncol="3"}
-![Boulder: 4m wall, 3 problems in final](figures/climbing-boulder.jpeg){height="90%"}
+![Boulder: 4m wall, 3 problems in
+final](figures/climbing-boulder.jpeg){height="90%"}
 
 ![Lead: 15m wall, 1 problem](figures/climbing-lead.jpeg){height="90%"}
 
-![Speed: 15m wall, always the same](figures/climbing-speed.jpeg){height="70%"}
+![Speed: 15m wall, always the
+same](figures/climbing-speed.jpeg){height="70%"}
 :::
 
 ## Three disciplines, one gold medal {.smaller}
 
-In Tokyo 2020, athletes are ranked from 1 to 8 (top - bottom) in each discipline. The final score is the multiplication of the ranks in each discipline.
-
+In Tokyo 2020, athletes are ranked from 1 to 8 (top - bottom) in each
+discipline. The final score is the multiplication of the ranks in each
+discipline.
 
 | Athletes            | Country  | Speed | Boulder | Lead | Total | Rank |
 |---------------------|----------|-------|---------|------|-------|------|
@@ -662,23 +652,31 @@ In Tokyo 2020, athletes are ranked from 1 to 8 (top - bottom) in each discipline
 
 . . .
 
-Aleksandra Miroslaw gets 4th despite ranked last in both boulder and lead: 
+Aleksandra Miroslaw gets 4th despite ranked last in both boulder and
+lead:
 
-  - 0/3 in boulder problems (0T0Z)
-  - scored 9/40 points in the lead (as compared to others: 13, 20, 21, 29, 34, 35, 37)
+-   0/3 in boulder problems (0T0Z)
+-   scored 9/40 points in the lead (as compared to others: 13, 20, 21,
+    29, 34, 35, 37)
 
-But she could win a medal if she performs better in the qualification round.
+But she could win a medal if she performs better in the qualification
+round.
 
 ## [Hence this year, sport climbing has two medals]{.r-fit-text} {.smaller}
 
-  - speed +  boulder and lead combined
-  - boulder-and-lead combined has 200 points, each discipline worth 100 points:
-      - boulder: 25 points x 4 problems, partial points of 5 and 10 for zone 1 and zone2
-      - lead: counting from the top, the last 10 moves - 4 points each, the previous 10 moves - 3 points each, ... (4 x 10 + 3 x 10 + 2 x 10 + 10 = 100)
+-   speed + boulder and lead combined
+-   boulder-and-lead combined has 200 points, each discipline worth 100
+    points:
+    -   boulder: 25 points x 4 problems, partial points of 5 and 10 for
+        zone 1 and zone2
+    -   lead: counting from the top, the last 10 moves - 4 points each,
+        the previous 10 moves - 3 points each, ... (4 x 10 + 3 x 10 + 2
+        x 10 + 10 = 100)
 
 . . .
 
-The game is on this week, but 1/4am PT `r set.seed(1234); emo::ji("sad")`...
+The game is on this week, but 1/4am PT
+`r set.seed(1234); emo::ji("sad")`...
 
 ## Inspired from tidymodel
 
@@ -689,11 +687,15 @@ The game is on this week, but 1/4am PT `r set.seed(1234); emo::ji("sad")`...
 ::: notes
 The most commonly used drought index is called SPI,
 
-A huge collection of literature proposes drought indexes on top of SPI to improve the monitoring.
+A huge collection of literature proposes drought indexes on top of SPI
+to improve the monitoring.
 
-All these indexes resemble each other but they all implemented differently by different research groups.
+All these indexes resemble each other but they all implemented
+differently by different research groups.
 
-It is similar to the situation that initially different machine learning methods are proposed by different research groups, and then tidymodel comes in to unite them all under the same workflow.
+It is similar to the situation that initially different machine learning
+methods are proposed by different research groups, and then tidymodel
+comes in to unite them all under the same workflow.
 
 It would be nice if the pipeline to construct indexes look like this
 :::
@@ -702,7 +704,8 @@ It would be nice if the pipeline to construct indexes look like this
 
 ::: columns
 ::: column
-*data with spatial (*$\mathbf{s}$) and temporal ($\mathbf{t}$) dimensions: $$x_j(s;t)$$
+*data with spatial (*$\mathbf{s}$) and temporal ($\mathbf{t}$)
+dimensions: $$x_j(s;t)$$
 
 -   **Temporal processing**: $f[x_{sj}(t)]$
 -   **Spatial processing**: $g[x_{tj}(s)]$
@@ -737,9 +740,14 @@ C_z & c_z \leq x(\mathbf{s};\mathbf{t})
 :::
 
 ::: notes
-In this project, we identify 9 modules that are used to construct indexes from literature in different domains.
+In this project, we identify 9 modules that are used to construct
+indexes from literature in different domains.
 
-We also develop software implementation for some of the modules. These are modules in the sense that there could be different ways to transform one variable into another, but they can also sit under the variable transformation module. In the next slide, I will mention an example of this.
+We also develop software implementation for some of the modules. These
+are modules in the sense that there could be different ways to transform
+one variable into another, but they can also sit under the variable
+transformation module. In the next slide, I will mention an example of
+this.
 :::
 
 ## Software design
@@ -756,13 +764,14 @@ dimension_reduction(V2 = aggregate_geometrical(...))
 dimension_reduction(V3 = aggregate_manual(...))
 ```
 
-The `aggregate_*()` function can be evaluated as a standalone recipe, before evaluated with the data in the dimension reduction module:
+The `aggregate_*()` function can be evaluated as a standalone recipe,
+before evaluated with the data in the dimension reduction module:
 
 ```{r eval = TRUE, echo=TRUE}
 aggregate_manual(~x1 + x2)
 ```
 
-## Pipeline for two drought indexes 
+## Pipeline for two drought indexes
 
 ::: panel-tabset
 ### SPI
@@ -805,12 +814,18 @@ data %>%                                  # data contain `tavg` and `prcp`
 :::
 
 ::: notes
-What we built with the tidyindex package are the pieces aggregate for temporal aggregation, dist_fit for fitting distribution, and augment for normalising. Users can compose their indexes from the module developed. Also we provide some wrapper for commonly used indexes, for example, the SPI and SPEI with some default parameters.
+What we built with the tidyindex package are the pieces aggregate for
+temporal aggregation, dist_fit for fitting distribution, and augment for
+normalising. Users can compose their indexes from the module developed.
+Also we provide some wrapper for commonly used indexes, for example, the
+SPI and SPEI with some default parameters.
 :::
 
 ## Confidence interval in the SPI {.smaller}
 
-A bootstrap sample of 100 is taken from the aggregated precipitation series to estimate gamma parameters and to calculate the index SPI for the *Texas Post Office* station in Queensland.
+A bootstrap sample of 100 is taken from the aggregated precipitation
+series to estimate gamma parameters and to calculate the index SPI for
+the *Texas Post Office* station in Queensland.
 
 ::: columns
 ::: column
@@ -853,10 +868,18 @@ DATA %>%
 
 ## Confidence interval in the SPI {.smaller}
 
-![80% and 95% confidence interval of the Standardized Precipitation Index (SPI-24) for the Texas post office station, in Queensland, Australia. The dashed line at SPI = -2 represents an extreme drought as defined by the SPI. Most parts of the confidence intervals from 2019 to 2020 sit below the extreme drought line and are relatively wide compared to other time periods. This suggests that while it is certain that the Texas post office is suffering from a drastic drought, there is considerable uncertainty in quantifying its severity, given the extremity of the event.](figures/fig-conf-interval-1.png){width="1000" height="300"}
+![80% and 95% confidence interval of the Standardized Precipitation
+Index (SPI-24) for the Texas post office station, in Queensland,
+Australia. The dashed line at SPI = -2 represents an extreme drought as
+defined by the SPI. Most parts of the confidence intervals from 2019 to
+2020 sit below the extreme drought line and are relatively wide compared
+to other time periods. This suggests that while it is certain that the
+Texas post office is suffering from a drastic drought, there is
+considerable uncertainty in quantifying its severity, given the
+extremity of the event.](figures/fig-conf-interval-1.png){width="1000"
+height="300"}
 
-
-## Global Gender Gap Index{.smaller background-image="figures/gggi-weight.png" background-size="50%" background-position="90% 55%"}
+## Global Gender Gap Index {.smaller background-image="figures/gggi-weight.png" background-size="50%" background-position="90% 55%"}
 
 ::: {layout-ncol="2"}
 ![](figures/gggi.png){height="600," width="400"}
@@ -877,6 +900,7 @@ DATA %>%
 <!-- Advantages? -->
 
 <!-- -   quantify uncertainties, and -->
+
 <!-- -   assess indexes’ robustness, -->
 
 ## The team {.center}
@@ -916,21 +940,19 @@ generate_svg(a, filename = "figures/qrcode.svg")
     -   CRAN:
         <https://cran.r-project.org/web/packages/cubble/index.html>
 -   the `tidyindex` package:
-    -   {{< fa brands github >}}: <https://huizezhang-sherry.github.io/tidyindex/>
-    -   CRAN: <https://cran.r-project.org/web/packages/tidyindex/index.html>
+    -   {{< fa brands github >}}:
+        <https://huizezhang-sherry.github.io/tidyindex/>
+    -   CRAN:
+        <https://cran.r-project.org/web/packages/tidyindex/index.html>
 -   paper:
     -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P.
         (2024). cubble: An R package for organizing and wrangling
         multivariate spatio-temporal data. Accepted by the Journal of
         Statistical Software: <https://arxiv.org/abs/2205.00259>
-     -  Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P. (2024). 
-        A Tidy Framework and Infrastructure to Systematically Assemble Spatio-temporal 
-        Indexes from Multivariate Data. *Journal of Computational and Graphical Statistics*, 
-        1-19. <https://doi.org/10.1080/10618600.2024.2374960>
-
-  
-
+    -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P.
+        (2024). A Tidy Framework and Infrastructure to Systematically
+        Assemble Spatio-temporal Indexes from Multivariate Data.
+        *Journal of Computational and Graphical Statistics*, 1-19.
+        <https://doi.org/10.1080/10618600.2024.2374960>
 -   
 -   paper:
-   
-
