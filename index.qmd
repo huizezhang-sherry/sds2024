@@ -1,7 +1,7 @@
 ---
-title: "Switching between space and time: Spatio-temporal analysis with cubble"
-author: "H. Sherry Zhang " 
-institute: "University of Texas at Austin" 
+title: "Pivoting between space and time: Spatio-temporal analysis with cubble"
+author: "H. Sherry Zhang" 
+institute: "SDS Department Seminar" 
 date: "2024 Oct 18"
 format: 
   revealjs:
@@ -61,11 +61,75 @@ library(tsibble)
 library(lubridate)
 ```
 
+## About me {.smaller background-image="figures/numbat.jpg" background-size="15%" background-position="top right"}
+
 ```{css, echo=FALSE}
 .form-allowed-tags {
   display: none;
 }
 ```
+
+```{r}
+proj_str <- st_crs("+proj=natearth +x_0=0 +y_0=0 +lat_0=0 +lon_0=150")
+a <- rnaturalearth::ne_countries(scale = "small", returnclass = "sf") |> 
+  filter(sov_a3 != "ATA", admin != "Greenland") |> 
+  #rmapshaper::ms_simplify(keep = 0.75) |> 
+  st_transform(proj_str)
+
+cities_df <- tibble(
+  cities = c("Shanghai", "Melbourne", "Austin"), 
+  long = c(121, 144, -97),
+  lat = c(31, -40, 30)
+) |> sf::st_as_sf(coords = c("long", "lat"), crs = 4326) |> 
+  st_transform(proj_str)
+
+cities_lines <- cities_df |> summarise() |> st_cast("LINESTRING")
+
+a |> 
+  ggplot() + 
+  geom_sf(color = "grey80", fill = "grey80")  + 
+  geom_sf(data = cities_lines, color = "black", size = 1) +
+  geom_sf_label(data = cities_df, aes(label = cities), color = "black", size = 5) +
+  theme_void() 
+```
+
+PhD in statistics @ Monash University | our group: Monash NUMBATs:  <https://numbat.space/>
+
+## Things I was doing during my PhD
+
+
+- thesis title: New tools for visualising and explaining multivariate spatio-temporal data
+
+  - diagnosing the optimisation of a dimension reduction technique called projection pursuit
+
+  - creating a new data structure for spatio-temporal data that works with the tidy data principle + glyph map
+
+  - a pipeline to create indexes for combining multivariate information
+
+- write three R packages: ferrn, cubble, and tidyindex
+
+## Things I'm doing now 
+
+::: {style="font-size: 86%;"}
+
+* working w/ Roger on analytic design theory - diagnosing unexpected results in data analysis 
+
+* continuing my PhD work: 
+    
+    * a new optimiser for projection pursuit: jellyfish search optimiser
+    * supervising students on creating extensions of glyph maps
+    
+* curating the CRAN Task View (CTV) for dynamic visualizations
+
+* playing squash, climbing, somehow being dragged into volleyball
+
+* this week: watching too much Attack on Titan ... (finally finished!) 
+
+:::
+
+# Cubble: An R Package for Organizing and Wrangling Multivariate Spatio-temporal Data {style="font-size:70%;"}
+
+## 
 
 Spatio-temporal data can mean different things and today we will talk
 about vector data.
@@ -183,7 +247,7 @@ temperature <- cubble::climate_aus  %>%
   as_tsibble(index = date, key = id)
 ```
 
-::: columns
+::::: columns
 ::: {.column width="60%"}
 ```{r}
 #| echo: true
@@ -213,7 +277,7 @@ temperature %>%
   theme_bw()
 ```
 :::
-:::
+:::::
 
 ::: notes
 -   Let's put these in a data context.
@@ -502,7 +566,7 @@ p2 <- cb_tbl %>%
 
 ## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-::: columns
+::::: columns
 ::: {.column width="40%"}
 ```{r}
 #| fig-width: 4
@@ -554,11 +618,11 @@ cb_grp %>%
   ggthemes::theme_map()
 ```
 :::
-:::
+:::::
 
 ## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-::: columns
+::::: columns
 ::: {.column width="50%"}
 ```{r eval = FALSE, echo = TRUE}
 DATA %>% 
@@ -595,13 +659,15 @@ cb_grp %>%
   ggthemes::theme_map()
 ```
 :::
-:::
+:::::
 
-## Extensions to line glyphs {.smaller background-image="figures/glyph-extensions.png" background-size="60%" background-position="50% 70%"}
+## Extensions to line glyphs {.smaller background-image="figures/glyph-extensions.png" background-size="60%" background-position="50% 80%"}
 
 *From Google Summer of Code this year...*
 
 <!-- ![](figures/glyph-extensions.png){fig-align="center"} -->
+
+# A Tidy Framework and Infrastructure to Systematically Assemble Spatio-temporal Indexes from Multivariate Data {style="font-size:70%;"}
 
 ## Indexes
 
@@ -675,8 +741,10 @@ round.
 
 . . .
 
-The game is on this week, but 1/4am PT
-`r set.seed(1234); emo::ji("sad")`...
+`r set.seed(1234); emo::ji("gold")`: 
+
+  * Janja Garnbret won the gold medal in the combined discipline
+  * Aleksandra Miroslaw won  the speed medal
 
 ## Inspired from tidymodel
 
@@ -702,7 +770,7 @@ It would be nice if the pipeline to construct indexes look like this
 
 ## The pipeline design (9 modules) {.smaller}
 
-::: columns
+::::: columns
 ::: column
 *data with spatial (*$\mathbf{s}$) and temporal ($\mathbf{t}$)
 dimensions: $$x_j(s;t)$$
@@ -726,7 +794,6 @@ dimensions: $$x_j(s;t)$$
 -   **Benchmarking**: $u[x(s;t)]$
 -   **Simplification**
 
-```{=tex}
 \begin{equation}
 \begin{cases}
 C_0 & c_1 \leq x(\mathbf{s};\mathbf{t}) < c_0 \\
@@ -735,9 +802,8 @@ C_1 & c_2 \leq x(\mathbf{s};\mathbf{t}) < c_1 \\
 C_z & c_z \leq x(\mathbf{s};\mathbf{t})
 \end{cases}
 \end{equation}
-```
 :::
-:::
+:::::
 
 ::: notes
 In this project, we identify 9 modules that are used to construct
@@ -827,7 +893,7 @@ A bootstrap sample of 100 is taken from the aggregated precipitation
 series to estimate gamma parameters and to calculate the index SPI for
 the *Texas Post Office* station in Queensland.
 
-::: columns
+::::: columns
 ::: column
 ```{r}
 texas <- queensland |> dplyr::filter(name == "TEXAS POST OFFICE") |> head(1)
@@ -864,7 +930,7 @@ DATA %>%
   augment(.var = .agg)
 ```
 :::
-:::
+:::::
 
 ## Confidence interval in the SPI {.smaller}
 
@@ -887,11 +953,11 @@ height="300"}
 
 ##  {background-image="figures/idx-tour-static.png" background-size="55%" background-position="right"}
 
-::: columns
+:::: columns
 ::: {.column width="30%"}
 ![](figures/idx-tour.gif){width="100%"}
 :::
-:::
+::::
 
 <!-- ## summary {.smaller} -->
 
@@ -903,30 +969,11 @@ height="300"}
 
 <!-- -   assess indexes’ robustness, -->
 
-## The team {.center}
-
-::: portrait
-![](https://dicook.github.io/dicook-quarto/dicook-2023.png) Dianne Cook
-:::
-
-::: portrait
-![](https://www.patriciamenendez.com/img/pmg.jpg) Patricia Menéndez
-:::
-
-::: portrait
-![](https://uschilaa.github.io/profile.jpg) Ursula Laa
-:::
-
-::: portrait
-![](https://staff.uic.edu.cn/attachment/images/2022/02/22/image_1645506624_ZXRS6xWr.jpeg)
-Nicolas Langrené
-:::
-
 ## `r emo::ji("link")` {.smaller background-image="figures/qrcode.svg" background-size="15%" background-position="top right"}
 
 ```{r echo = FALSE, eval = FALSE}
 library(qrcode)
-a <- qr_code("https://sherryzhang-chamber2024.netlify.app/")
+a <- qr_code("https://sherryzhang-sds2024.netlify.app/")
 generate_svg(a, filename = "figures/qrcode.svg")
 ```
 
@@ -934,25 +981,14 @@ generate_svg(a, filename = "figures/qrcode.svg")
     -   {{< fa link >}}: <https://sherryzhang-sds2024.netlify.app>
     -   {{< fa brands github >}}:
         <https://github.com/huizezhang-sherry/sds2024>
--   the `cubble` package:
-    -   {{< fa brands github >}}:
-        <https://huizezhang-sherry.github.io/cubble/>
-    -   CRAN:
-        <https://cran.r-project.org/web/packages/cubble/index.html>
--   the `tidyindex` package:
-    -   {{< fa brands github >}}:
-        <https://huizezhang-sherry.github.io/tidyindex/>
-    -   CRAN:
-        <https://cran.r-project.org/web/packages/tidyindex/index.html>
+-   the `cubble` and `tidyindex` package are on CRAN
 -   paper:
-    -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P.
-        (2024). cubble: An R package for organizing and wrangling
-        multivariate spatio-temporal data. Accepted by the Journal of
-        Statistical Software: <https://arxiv.org/abs/2205.00259>
+    -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P. (2024). 
+        cubble: An R Package for Organizing and Wrangling Multivariate 
+        Spatio-Temporal Data. Journal of Statistical Software, 110, 1-27. 
+        <https://www.jstatsoft.org/article/view/v110i07>
     -   Zhang, H. S., Cook, D., Laa, U., Langrené, N., & Menéndez, P.
         (2024). A Tidy Framework and Infrastructure to Systematically
         Assemble Spatio-temporal Indexes from Multivariate Data.
         *Journal of Computational and Graphical Statistics*, 1-19.
         <https://doi.org/10.1080/10618600.2024.2374960>
--   
--   paper:

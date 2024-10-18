@@ -10,11 +10,11 @@
 <link href="index_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <link href="index_files/libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
 <link href="index_files/libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet"><meta charset="utf-8">
-  <meta name="generator" content="quarto-1.4.555">
+  <meta name="generator" content="quarto-1.5.56">
 
   <meta name="author" content="H. Sherry Zhang">
   <meta name="dcterms.date" content="2024-10-18">
-  <title>Switching between space and time: Spatio-temporal analysis with cubble</title>
+  <title>Pivoting between space and time: Spatio-temporal analysis with cubble</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -45,7 +45,7 @@
     }
     @media print {
     pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
     }
     pre.numberSource code
       { counter-reset: source-line 0; }
@@ -73,7 +73,7 @@
     code span.at { color: #657422; } /* Attribute */
     code span.bn { color: #ad0000; } /* BaseN */
     code span.bu { } /* BuiltIn */
-    code span.cf { color: #003b4f; } /* ControlFlow */
+    code span.cf { color: #003b4f; font-weight: bold; } /* ControlFlow */
     code span.ch { color: #20794d; } /* Char */
     code span.cn { color: #8f5902; } /* Constant */
     code span.co { color: #5e5e5e; } /* Comment */
@@ -87,7 +87,7 @@
     code span.fu { color: #4758ab; } /* Function */
     code span.im { color: #00769e; } /* Import */
     code span.in { color: #5e5e5e; } /* Information */
-    code span.kw { color: #003b4f; } /* Keyword */
+    code span.kw { color: #003b4f; font-weight: bold; } /* Keyword */
     code span.op { color: #5e5e5e; } /* Operator */
     code span.ot { color: #003b4f; } /* Other */
     code span.pp { color: #ad0000; } /* Preprocessor */
@@ -396,7 +396,7 @@
     <div class="slides">
 
 <section id="title-slide" data-background-image="figures/logo.png" data-background-position="98% 98%" data-background-size="7%" class="quarto-title-block center">
-  <h1 class="title">Switching between space and time: Spatio-temporal analysis with cubble</h1>
+  <h1 class="title">Pivoting between space and time: Spatio-temporal analysis with cubble</h1>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -404,15 +404,15 @@
 H. Sherry Zhang 
 </div>
         <p class="quarto-title-affiliation">
-            University of Texas at Austin
+            SDS Department Seminar
           </p>
     </div>
 </div>
 
   <p class="date">2024-10-18</p>
 </section>
-<section class="slide level2">
-
+<section id="about-me" class="slide level2 smaller" data-background-image="figures/numbat.jpg" data-background-size="15%" data-background-position="top right">
+<h2>About me</h2>
 <div class="cell" data-layout-align="center">
 <style type="text/css">
 .form-allowed-tags {
@@ -420,9 +420,47 @@ H. Sherry Zhang
 }
 </style>
 </div>
+
+<img data-src="index_files/figure-revealjs/unnamed-chunk-2-1.png" class="quarto-figure quarto-figure-center r-stretch" width="960"><p>PhD in statistics @ Monash University | our group: Monash NUMBATs: <a href="https://numbat.space/" class="uri">https://numbat.space/</a></p>
+</section>
+<section id="things-i-was-doing-during-my-phd" class="slide level2">
+<h2>Things I was doing during my PhD</h2>
+<ul>
+<li><p>thesis title: New tools for visualising and explaining multivariate spatio-temporal data</p>
+<ul>
+<li><p>diagnosing the optimisation of a dimension reduction technique called projection pursuit</p></li>
+<li><p>creating a new data structure for spatio-temporal data that works with the tidy data principle + glyph map</p></li>
+<li><p>a pipeline to create indexes for combining multivariate information</p></li>
+</ul></li>
+<li><p>write three R packages: ferrn, cubble, and tidyindex</p></li>
+</ul>
+</section>
+<section id="things-im-doing-now" class="slide level2">
+<h2>Things I’m doing now</h2>
+<div style="font-size: 86%;">
+<ul>
+<li><p>working w/ Roger on analytic design theory - diagnosing unexpected results in data analysis</p></li>
+<li><p>continuing my PhD work:</p>
+<ul>
+<li>a new optimiser for projection pursuit: jellyfish search optimiser</li>
+<li>supervising students on creating extensions of glyph maps</li>
+</ul></li>
+<li><p>curating the CRAN Task View (CTV) for dynamic visualizations</p></li>
+<li><p>playing squash, climbing, somehow being dragged into volleyball</p></li>
+<li><p>this week: watching too much Attack on Titan … (finally finished!)</p></li>
+</ul>
+</div>
+</section>
+<section>
+<section id="cubble-an-r-package-for-organizing-and-wrangling-multivariate-spatio-temporal-data" class="title-slide slide level1 center" style="font-size:70%;">
+<h1>Cubble: An R Package for Organizing and Wrangling Multivariate Spatio-temporal Data</h1>
+
+</section>
+<section id="section" class="slide level2">
+<h2></h2>
 <p>Spatio-temporal data can mean different things and today we will talk about vector data.</p>
 
-<img data-src="index_files/figure-revealjs/unnamed-chunk-3-1.png" class="quarto-figure quarto-figure-center r-stretch" width="960"><aside class="notes">
+<img data-src="index_files/figure-revealjs/unnamed-chunk-4-1.png" class="quarto-figure quarto-figure-center r-stretch" width="960"><aside class="notes">
 <p>Here we have three different types: vector, raster, trajectory data (explain each)</p>
 <p>vector data have time series measured at a collection of locations</p>
 <p>satellite images use gridded cells to represent a continuous space and each cell, or pixel, has variables or bands measured at different time points.</p>
@@ -440,7 +478,7 @@ H. Sherry Zhang
           display:block!important;
       }</style></aside>
 </section>
-<section id="section" class="slide level2">
+<section id="section-1" class="slide level2">
 <h2></h2>
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
@@ -455,7 +493,7 @@ H. Sherry Zhang
 <p>Cubble is a nested object built on tibble that allow easy pivoting between spatial and temporal aspect of the data.</p>
 </div>
 </section>
-<section id="section-1" class="slide level2">
+<section id="section-2" class="slide level2">
 <h2></h2>
 
 <img data-src="figures/cubble-operations.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"><aside class="notes">
@@ -541,8 +579,7 @@ Geodetic CRS:  WGS 84
 </div>
 </div>
 </div>
-</div>
-</div>
+</div></div>
 <aside class="notes">
 <ul>
 <li><p>Let’s put these in a data context.</p></li>
@@ -711,7 +748,7 @@ Geodetic CRS:  WGS 84
 <section id="background-what-are-glyph-maps-and-why-do-you-need-one" class="slide level2">
 <h2><span class="r-fit-text">Background: what are glyph maps and why do you need one?</span></h2>
 
-<img data-src="index_files/figure-revealjs/unnamed-chunk-12-1.png" class="quarto-figure quarto-figure-center r-stretch" width="1440"><div class="footer">
+<img data-src="index_files/figure-revealjs/unnamed-chunk-13-1.png" class="quarto-figure quarto-figure-center r-stretch" width="1440"><div class="footer">
 <p>Modified from <em>Glyph-maps for Visually Exploring Temporal Patterns in Climate Data and Models</em> (Wickham, 2012)</p>
 </div>
 <aside class="notes">
@@ -754,7 +791,7 @@ Geodetic CRS:  WGS 84
 <section id="background-what-are-glyph-maps-and-why-do-you-need-one-3" class="slide level2">
 <h2><span class="r-fit-text">Background: what are glyph maps and why do you need one?</span></h2>
 
-<img data-src="index_files/figure-revealjs/unnamed-chunk-14-1.png" class="quarto-figure quarto-figure-center r-stretch" width="1440"></section>
+<img data-src="index_files/figure-revealjs/unnamed-chunk-15-1.png" class="quarto-figure quarto-figure-center r-stretch" width="1440"></section>
 <section id="glyph-map-linear-transformation" class="slide level2">
 <h2>Glyph map: linear transformation</h2>
 
@@ -826,7 +863,7 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-18-1.png" class="quarto-figure quarto-figure-center" width="1440"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-19-1.png" class="quarto-figure quarto-figure-center" width="1440"></p>
 </figure>
 </div>
 </div>
@@ -842,7 +879,7 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-19-1.png" class="quarto-figure quarto-figure-center" width="384"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-20-1.png" class="quarto-figure quarto-figure-center" width="384"></p>
 </figure>
 </div>
 </div>
@@ -852,13 +889,12 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-20-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-21-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
 </figure>
 </div>
 </div>
 </div>
-</div>
-</div>
+</div></div>
 </section>
 <section id="example-averaged-max-temperature-by-month-in-australia-3" class="slide level2">
 <h2><span class="r-fit-text">Example: averaged max temperature by month in Australia</span></h2>
@@ -886,18 +922,22 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-22-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-23-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
 </figure>
 </div>
 </div>
 </div>
-</div>
-</div>
+</div></div>
 </section>
-<section id="extensions-to-line-glyphs" class="slide level2 smaller" data-background-image="figures/glyph-extensions.png" data-background-size="60%" data-background-position="50% 70%">
+<section id="extensions-to-line-glyphs" class="slide level2 smaller" data-background-image="figures/glyph-extensions.png" data-background-size="60%" data-background-position="50% 80%">
 <h2>Extensions to line glyphs</h2>
 <p><em>From Google Summer of Code this year…</em></p>
 <!-- ![](figures/glyph-extensions.png){fig-align="center"} -->
+</section></section>
+<section>
+<section id="a-tidy-framework-and-infrastructure-to-systematically-assemble-spatio-temporal-indexes-from-multivariate-data" class="title-slide slide level1 center" style="font-size:70%;">
+<h1>A Tidy Framework and Infrastructure to Systematically Assemble Spatio-temporal Indexes from Multivariate Data</h1>
+
 </section>
 <section id="indexes" class="slide level2">
 <h2>Indexes</h2>
@@ -923,6 +963,9 @@ Geodetic CRS:  WGS 84
 <section id="sport-climbing-in-the-olympic-games" class="slide level2 smaller">
 <h2><span class="r-fit-text">Sport climbing in the Olympic Games 🧗‍♀️</span></h2>
 <p><em>2020 Tokyo version</em></p>
+<div>
+
+</div>
 <div class="quarto-layout-panel" data-layout-ncol="3">
 <div class="quarto-layout-row">
 <div class="quarto-layout-cell" style="flex-basis: 33.3%;justify-content: flex-start;">
@@ -1044,7 +1087,11 @@ Geodetic CRS:  WGS 84
 </ul></li>
 </ul>
 <div class="fragment">
-<p>The game is on this week, but 1/4am PT 😭…</p>
+<p>🥇:</p>
+<ul>
+<li>Janja Garnbret won the gold medal in the combined discipline</li>
+<li>Aleksandra Miroslaw won the speed medal</li>
+</ul>
 </div>
 </section>
 <section id="inspired-from-tidymodel" class="slide level2">
@@ -1096,16 +1143,15 @@ Geodetic CRS:  WGS 84
 <li><strong>Benchmarking</strong>: <span class="math inline">\(u[x(s;t)]\)</span></li>
 <li><strong>Simplification</strong></li>
 </ul>
-<span class="math display">\[\begin{equation}
+<p><span class="math display">\[\begin{equation}
 \begin{cases}
 C_0 &amp; c_1 \leq x(\mathbf{s};\mathbf{t}) &lt; c_0 \\
 C_1 &amp; c_2 \leq x(\mathbf{s};\mathbf{t}) &lt; c_1 \\
 \cdots \\
 C_z &amp; c_z \leq x(\mathbf{s};\mathbf{t})
 \end{cases}
-\end{equation}\]</span>
-</div>
-</div>
+\end{equation}\]</span></p>
+</div></div>
 <aside class="notes">
 <p>In this project, we identify 9 modules that are used to construct indexes from literature in different domains.</p>
 <p>We also develop software implementation for some of the modules. These are modules in the sense that there could be different ways to transform one variable into another, but they can also sit under the variable transformation module. In the next slide, I will mention an example of this.</p>
@@ -1208,7 +1254,7 @@ attr(,"class")
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-27-1.png" class="quarto-figure quarto-figure-center" width="960"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-28-1.png" class="quarto-figure quarto-figure-center" width="960"></p>
 </figure>
 </div>
 </div>
@@ -1232,8 +1278,7 @@ attr(,"class")
 <span id="cb26-15"><a href=""></a>  <span class="co"># convert into z-score</span></span>
 <span id="cb26-16"><a href=""></a>  <span class="fu">augment</span>(<span class="at">.var =</span> .agg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</div>
-</div>
+</div></div>
 </section>
 <section id="confidence-interval-in-the-spi-1" class="slide level2 smaller">
 <h2>Confidence interval in the SPI</h2>
@@ -1246,6 +1291,9 @@ attr(,"class")
 </section>
 <section id="global-gender-gap-index" class="slide level2 smaller" data-background-image="figures/gggi-weight.png" data-background-size="50%" data-background-position="90% 55%">
 <h2>Global Gender Gap Index</h2>
+<div>
+
+</div>
 <div class="quarto-layout-panel" data-layout-ncol="2">
 <div class="quarto-layout-row">
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
@@ -1254,35 +1302,19 @@ attr(,"class")
 </div>
 </div>
 </section>
-<section id="section-2" class="slide level2" data-background-image="figures/idx-tour-static.png" data-background-size="55%" data-background-position="right">
+<section id="section-3" class="slide level2" data-background-image="figures/idx-tour-static.png" data-background-size="55%" data-background-position="right">
 <h2></h2>
 <div class="columns">
 <div class="column" style="width:30%;">
 <p><img data-src="figures/idx-tour.gif" style="width:100.0%"></p>
-</div>
-</div>
+</div></div>
 <!-- ## summary {.smaller} -->
 <!-- A data pipeline comprising nine modules designed for the construction and analysis of indexes within the tidy framework. -->
 <!-- Advantages? -->
 <!-- -   quantify uncertainties, and -->
 <!-- -   assess indexes’ robustness, -->
 </section>
-<section id="the-team" class="slide level2 center">
-<h2>The team</h2>
-<div class="portrait">
-<p><img data-src="https://dicook.github.io/dicook-quarto/dicook-2023.png"> Dianne Cook</p>
-</div>
-<div class="portrait">
-<p><img data-src="https://www.patriciamenendez.com/img/pmg.jpg"> Patricia Menéndez</p>
-</div>
-<div class="portrait">
-<p><img data-src="https://uschilaa.github.io/profile.jpg"> Ursula Laa</p>
-</div>
-<div class="portrait">
-<p><img data-src="https://staff.uic.edu.cn/attachment/images/2022/02/22/image_1645506624_ZXRS6xWr.jpeg"> Nicolas Langrené</p>
-</div>
-</section>
-<section id="section-3" class="slide level2 smaller" data-background-image="figures/qrcode.svg" data-background-size="15%" data-background-position="top right">
+<section id="section-4" class="slide level2 smaller" data-background-image="figures/qrcode.svg" data-background-size="15%" data-background-position="top right">
 <h2>🔗</h2>
 <ul>
 <li>this slide:
@@ -1290,30 +1322,19 @@ attr(,"class")
 <li><i class="fa-solid fa-link" aria-label="link"></i>: <a href="https://sherryzhang-sds2024.netlify.app" class="uri">https://sherryzhang-sds2024.netlify.app</a></li>
 <li><i class="fa-brands fa-github" aria-label="github"></i>: <a href="https://github.com/huizezhang-sherry/sds2024" class="uri">https://github.com/huizezhang-sherry/sds2024</a></li>
 </ul></li>
-<li>the <code>cubble</code> package:
-<ul>
-<li><i class="fa-brands fa-github" aria-label="github"></i>: <a href="https://huizezhang-sherry.github.io/cubble/" class="uri">https://huizezhang-sherry.github.io/cubble/</a></li>
-<li>CRAN: <a href="https://cran.r-project.org/web/packages/cubble/index.html" class="uri">https://cran.r-project.org/web/packages/cubble/index.html</a></li>
-</ul></li>
-<li>the <code>tidyindex</code> package:
-<ul>
-<li><i class="fa-brands fa-github" aria-label="github"></i>: <a href="https://huizezhang-sherry.github.io/tidyindex/" class="uri">https://huizezhang-sherry.github.io/tidyindex/</a></li>
-<li>CRAN: <a href="https://cran.r-project.org/web/packages/tidyindex/index.html" class="uri">https://cran.r-project.org/web/packages/tidyindex/index.html</a></li>
-</ul></li>
+<li>the <code>cubble</code> and <code>tidyindex</code> package are on CRAN</li>
 <li>paper:
 <ul>
-<li>Zhang, H. S., Cook, D., Laa, U., Langrené, N., &amp; Menéndez, P. (2024). cubble: An R package for organizing and wrangling multivariate spatio-temporal data. Accepted by the Journal of Statistical Software: <a href="https://arxiv.org/abs/2205.00259" class="uri">https://arxiv.org/abs/2205.00259</a></li>
+<li>Zhang, H. S., Cook, D., Laa, U., Langrené, N., &amp; Menéndez, P. (2024). cubble: An R Package for Organizing and Wrangling Multivariate Spatio-Temporal Data. Journal of Statistical Software, 110, 1-27. <a href="https://www.jstatsoft.org/article/view/v110i07" class="uri">https://www.jstatsoft.org/article/view/v110i07</a></li>
 <li>Zhang, H. S., Cook, D., Laa, U., Langrené, N., &amp; Menéndez, P. (2024). A Tidy Framework and Infrastructure to Systematically Assemble Spatio-temporal Indexes from Multivariate Data. <em>Journal of Computational and Graphical Statistics</em>, 1-19. <a href="https://doi.org/10.1080/10618600.2024.2374960" class="uri">https://doi.org/10.1080/10618600.2024.2374960</a></li>
 </ul></li>
-<li></li>
-<li>paper:</li>
 </ul>
 <div class="quarto-auto-generated-content">
 <div class="footer footer-default">
 <p>https://sherryzhang-sds2024.netlify.app</p>
 </div>
 </div>
-</section>
+</section></section>
     </div>
   </div>
 
@@ -1597,18 +1618,7 @@ attr(,"class")
         }
         return false;
       }
-      const clipboard = new window.ClipboardJS('.code-copy-button', {
-        text: function(trigger) {
-          const codeEl = trigger.previousElementSibling.cloneNode(true);
-          for (const childEl of codeEl.children) {
-            if (isCodeAnnotation(childEl)) {
-              childEl.remove();
-            }
-          }
-          return codeEl.innerText;
-        }
-      });
-      clipboard.on('success', function(e) {
+      const onCopySuccess = function(e) {
         // button target
         const button = e.trigger;
         // don't keep focus
@@ -1640,7 +1650,29 @@ attr(,"class")
         }, 1000);
         // clear code selection
         e.clearSelection();
+      }
+      const getTextToCopy = function(trigger) {
+          const codeEl = trigger.previousElementSibling.cloneNode(true);
+          for (const childEl of codeEl.children) {
+            if (isCodeAnnotation(childEl)) {
+              childEl.remove();
+            }
+          }
+          return codeEl.innerText;
+      }
+      const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+        text: getTextToCopy
       });
+      clipboard.on('success', onCopySuccess);
+      if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+        // For code content inside modals, clipBoardJS needs to be initialized with a container option
+        // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+        const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+          text: getTextToCopy,
+          container: window.document.getElementById('quarto-embedded-source-code-modal')
+        });
+        clipboardModal.on('success', onCopySuccess);
+      }
         var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
         var mailtoRegex = new RegExp(/^mailto:/);
           var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -1648,7 +1680,7 @@ attr(,"class")
             return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
         }
         // Inspect non-navigation links and adorn them if external
-     	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+     	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
         for (var i=0; i<links.length; i++) {
           const link = links[i];
           if (!isInternal(link.href)) {
