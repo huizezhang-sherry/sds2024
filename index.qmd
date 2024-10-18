@@ -168,7 +168,10 @@ vector | raster | trajectory
 Here we have three different types: vector, raster, trajectory data
 (explain each)
 
-vector data have time series measured at a collection of locations
+vector data have time series measured at a collection of locations. Here we 
+have a collection of Australia weather stations. They are installed at fixed 
+locations and produce daily measurements of climate variables like 
+temperature and precipitation
 
 satellite images use gridded cells to represent a continuous space and
 each cell, or pixel, has variables or bands measured at different time
@@ -201,32 +204,26 @@ knitr::include_graphics(here::here("figures/cubble-operations.png"))
 ```
 
 ::: notes
--   Today I will introduce a new data structure, called cubble, for
-    vector spatio-temporal data
+-   what I mean by pivoting between spatial and temporal aspect of the data
+is that a cubble has two subclasses: a spatial cubble and a temporal cubble. 
 
--   in short, cubble is a nested object built on tibble that allow easy
-    pivoting between spatial and temporal form.
+-   The same data is stored behind the two formats but you can choose to
+expose the spatial or temporal aspect of the data for your operations. 
 
--   we will first talk about how the two forms look like and then how
-    you cna pivot beween them for different tasks.
-
--   In the nested form, spatial variables are in columns out and
+-   In the spatial cubble, spatial variables are in columns and
     temporal variables are nested into a list column called `ts`
 
--   In the long form, the time series data are shown in columns and each
+-   In the temporal cubble, the time series data are shown in columns and each
     row is cross identified by the site and date in a long table
 
 <!-- ## [Cubble: a spatio-temporal vector data structure]{.r-fit-text} -->
 
--   The pair `face_temporal()` and `face_spatial()` to switch the cubble
+-   The pair `face_temporal()` and `face_spatial()` allow you to switch
     between the two forms.
 
--   With `face_temporal()`, the focus of the data is now on the temporal
-    face of the spatio-temporal cube and this corresponds to switch the
-    data to the long form.
+-   So you can work on the spatial aspect of the data and use 
+`face_temporal()` to switch to the temporal aspect when you need to work on the time series data, and switch back to the spatial aspect with `face_spatial()` when you want to work on the spatial data again.
 
--   With `face_spatial()`, the long cubble is switched back to the
-    nested form, the spatial face of the datacube.
 :::
 
 ## Australian weather station data {.smaller}
@@ -282,8 +279,8 @@ temperature %>%
 ::: notes
 -   Let's put these in a data context.
 
--   The `stations` data records 30 Australia weather stations, along
-    with their longitude, latitude, elevation, and name
+-   The `stations` data records 88 Australia weather stations, along
+    with their longitude, latitude, elevation, and name, in an sf format
 
 \[breath\]
 
@@ -320,8 +317,8 @@ Read from the header:
 
 \[breath\]
 
--   From the cubble header, you can read that the key is `id`, there are
-    30 stations and it is in the nested form.
+-   From the cubble header, you can read that there are 88 stations and 
+it is in the nested form.
 
 -   The third line here shows you the available temporal variables and
     their types.
@@ -347,7 +344,7 @@ weather |> sf::st_transform(crs = "EPSG:3857")
 ```{r face-temporal, echo = TRUE}
 (weather_long <- weather |> face_temporal())
 class(weather_long)
-weather_long |> has_gaps()
+weather_long |> tsibble::has_gaps()
 ```
 
 ::: notes
@@ -419,10 +416,11 @@ Climate Data and Models* (Wickham, 2012)
 
 ::: notes
 Here is a typical plot you may have seen when someone tries to visualise
-their spatio-temporal data. The x and y axes are the coordinates, here I
-simplify it with only two points, but in reality you may see a
-collection of points in space or a raster image. Each facet here shows
-the space in different timestamp and the values are mapped into color.
+their spatio-temporal data. The x and y axes are the longitude and latitude 
+coordinates. What's being plotted is the de-seasonalized temperature in each 
+raster cell. The temperature is facetted by year and month. 
+
+What can you see here?
 
 The problem of this type of visualisation is that it becomes difficult
 to comprehend the temporal structure of the data since you have to
@@ -537,35 +535,6 @@ cb <- make_cubble(spatial = stations, temporal = temperature)
 
 ## [Example: averaged max temperature by month in Australia]{.r-fit-text}
 
-::: r-stack
-```{r}
-#| fig-width: 15
-#| fig-height: 6
-cb_tbl <- cb_glyph |> as_tibble() |> filter(!is.na(tmax), id != "ASN00067033")
-p1 <- cb_tbl |> ggplot(aes(x = month, y = tmax, group = id, color = tmax)) +
-  geom_line() +
-  scale_x_continuous(breaks = 1:12, labels = month.abb) + 
-  scale_color_distiller(palette = "OrRd", direction = 1) +
-  theme_bw() + 
-  theme(panel.grid = element_blank(), legend.position = "bottom")
-
-p2 <- cb_tbl %>% 
-  ggplot(aes(x = long, y = lat, color = tmax)) +
-  geom_sf(data = oz_simp, fill = "grey90",
-          color = "white", inherit.aes = FALSE) +
-  scale_color_distiller(palette = "OrRd", direction = 1) +
-  geom_point() + 
-  ggthemes::theme_map()
-
-(p1 | p2) &
-  theme(legend.position='bottom')
-```
-
-![](figures/wrong-way-go-back.png){.fragment height="450"}
-:::
-
-## [Example: averaged max temperature by month in Australia]{.r-fit-text}
-
 ::::: columns
 ::: {.column width="40%"}
 ```{r}
@@ -612,7 +581,7 @@ cb_grp %>%
              y_major = lat, y_minor = tmax, group = id, color = group)) +
   geom_sf(data = oz_simp, fill = "grey90",
           color = "white", inherit.aes = FALSE) +
-  geom_glyph_box(width = 1.5, height = 0.8) + 
+  geom_glyph_box(width = 1.5, height = 0.8, alpha = 0.1) + 
   geom_glyph(aes(color = group), width = 1.5, height = 0.8) + 
   scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "grey70")) +
   ggthemes::theme_map()
@@ -861,21 +830,21 @@ data %>%                         # data contain `prcp`
 ```{r}
 #| eval: false
 #| echo: true
-data %>%                                  # data contain `tavg` and `prcp`
-  var_trans(                              # step 1: variable transformation
-    .method = "thornthwaite",             #         using the thornthwaite function
-    .vars = tavg,                         #         on `tavg` 
-    .new_name = "pet") %>%                #         to create a new variable `pet` 
-  dim_red(diff = prcp - pet) %>%          # step 2: dimension reduction 
-  aggregate(                              # step 3: temporal aggregation
-    .var = diff,                          #         aggregate `diff` with time scale
-    .scale = .scale) %>%                  #         `.scale` to create `.agg`
-  dist_fit(                               # step 4: distribution fit
-    .dist = dist_gev(),                   #         use the gev distribution 
-    .var = .agg,                          #         to fit the variable `.agg`
-    .method = "lmoms") %>%                #         using L-moment        
-  augment(.var = .agg)                    # step 5: normalising 
-                                          #         find the normal density for `.agg`
+data %>%                            # data contain `tavg` and `prcp`
+  var_trans(                        # step 1: variable transformation
+    .method = "thornthwaite",       #         using the thornthwaite function
+    .vars = tavg,                   #         on `tavg` 
+    .new_name = "pet") %>%          #         to create a new variable `pet` 
+  dim_red(diff = prcp - pet) %>%    # step 2: dimension reduction 
+  aggregate(                              
+    .var = diff,                          
+    .scale = .scale) %>%                  
+  dist_fit(                               
+    .dist = dist_gev(),                   
+    .var = .agg,                          
+    .method = "lmoms") %>%                
+  augment(.var = .agg)                    
+                                          
 ```
 :::
 
@@ -950,6 +919,10 @@ height="300"}
 ::: {layout-ncol="2"}
 ![](figures/gggi.png){height="600," width="400"}
 :::
+
+## Global Gender Gap Index 
+
+<center>![](figures/idx-tour-012.png){height="400," width="300"} </center>
 
 ##  {background-image="figures/idx-tour-static.png" background-size="55%" background-position="right"}
 

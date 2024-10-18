@@ -462,7 +462,7 @@ H. Sherry Zhang
 
 <img data-src="index_files/figure-revealjs/unnamed-chunk-4-1.png" class="quarto-figure quarto-figure-center r-stretch" width="960"><aside class="notes">
 <p>Here we have three different types: vector, raster, trajectory data (explain each)</p>
-<p>vector data have time series measured at a collection of locations</p>
+<p>vector data have time series measured at a collection of locations. Here we have a collection of Australia weather stations. They are installed at fixed locations and produce daily measurements of climate variables like temperature and precipitation</p>
 <p>satellite images use gridded cells to represent a continuous space and each cell, or pixel, has variables or bands measured at different time points.</p>
 <p>There is also trajectory data where points are moving in the space and time in the same time. Here we have an example of Atlantic hurricane paths.</p>
 <p>In my talk today, we will focus on vector data.</p>
@@ -498,17 +498,15 @@ H. Sherry Zhang
 
 <img data-src="figures/cubble-operations.png" class="quarto-figure quarto-figure-center r-stretch" style="width:100.0%"><aside class="notes">
 <ul>
-<li><p>Today I will introduce a new data structure, called cubble, for vector spatio-temporal data</p></li>
-<li><p>in short, cubble is a nested object built on tibble that allow easy pivoting between spatial and temporal form.</p></li>
-<li><p>we will first talk about how the two forms look like and then how you cna pivot beween them for different tasks.</p></li>
-<li><p>In the nested form, spatial variables are in columns out and temporal variables are nested into a list column called <code>ts</code></p></li>
-<li><p>In the long form, the time series data are shown in columns and each row is cross identified by the site and date in a long table</p></li>
+<li><p>what I mean by pivoting between spatial and temporal aspect of the data is that a cubble has two subclasses: a spatial cubble and a temporal cubble.</p></li>
+<li><p>The same data is stored behind the two formats but you can choose to expose the spatial or temporal aspect of the data for your operations.</p></li>
+<li><p>In the spatial cubble, spatial variables are in columns and temporal variables are nested into a list column called <code>ts</code></p></li>
+<li><p>In the temporal cubble, the time series data are shown in columns and each row is cross identified by the site and date in a long table</p></li>
 </ul>
 <!-- ## [Cubble: a spatio-temporal vector data structure]{.r-fit-text} -->
 <ul>
-<li><p>The pair <code>face_temporal()</code> and <code>face_spatial()</code> to switch the cubble between the two forms.</p></li>
-<li><p>With <code>face_temporal()</code>, the focus of the data is now on the temporal face of the spatio-temporal cube and this corresponds to switch the data to the long form.</p></li>
-<li><p>With <code>face_spatial()</code>, the long cubble is switched back to the nested form, the spatial face of the datacube.</p></li>
+<li><p>The pair <code>face_temporal()</code> and <code>face_spatial()</code> allow you to switch between the two forms.</p></li>
+<li><p>So you can work on the spatial aspect of the data and use <code>face_temporal()</code> to switch to the temporal aspect when you need to work on the time series data, and switch back to the spatial aspect with <code>face_spatial()</code> when you want to work on the spatial data again.</p></li>
 </ul>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -583,7 +581,7 @@ Geodetic CRS:  WGS 84
 <aside class="notes">
 <ul>
 <li><p>Let’s put these in a data context.</p></li>
-<li><p>The <code>stations</code> data records 30 Australia weather stations, along with their longitude, latitude, elevation, and name</p></li>
+<li><p>The <code>stations</code> data records 88 Australia weather stations, along with their longitude, latitude, elevation, and name, in an sf format</p></li>
 </ul>
 <p>[breath]</p>
 <ul>
@@ -635,7 +633,7 @@ Geodetic CRS:  WGS 84
 </ul>
 <p>[breath]</p>
 <ul>
-<li><p>From the cubble header, you can read that the key is <code>id</code>, there are 30 stations and it is in the nested form.</p></li>
+<li><p>From the cubble header, you can read that there are 88 stations and it is in the nested form.</p></li>
 <li><p>The third line here shows you the available temporal variables and their types.</p></li>
 <li><p>Also, if the spatial and temporal data is an sf or tsibble object, they will be indicated in the header as well.</p></li>
 </ul>
@@ -702,7 +700,7 @@ Geodetic CRS:  WGS 84
 <pre><code>[1] "temporal_cubble_df" "cubble_df"          "tbl_ts"            
 [4] "tbl_df"             "tbl"                "data.frame"        </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href=""></a>weather_long <span class="sc">|&gt;</span> <span class="fu">has_gaps</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href=""></a>weather_long <span class="sc">|&gt;</span> tsibble<span class="sc">::</span><span class="fu">has_gaps</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 88 × 2
   id          .gaps
@@ -752,7 +750,8 @@ Geodetic CRS:  WGS 84
 <p>Modified from <em>Glyph-maps for Visually Exploring Temporal Patterns in Climate Data and Models</em> (Wickham, 2012)</p>
 </div>
 <aside class="notes">
-<p>Here is a typical plot you may have seen when someone tries to visualise their spatio-temporal data. The x and y axes are the coordinates, here I simplify it with only two points, but in reality you may see a collection of points in space or a raster image. Each facet here shows the space in different timestamp and the values are mapped into color.</p>
+<p>Here is a typical plot you may have seen when someone tries to visualise their spatio-temporal data. The x and y axes are the longitude and latitude coordinates. What’s being plotted is the de-seasonalized temperature in each raster cell. The temperature is facetted by year and month.</p>
+<p>What can you see here?</p>
 <p>The problem of this type of visualisation is that it becomes difficult to comprehend the temporal structure of the data since you have to compare points at the same location across panels to digest the pattern.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
@@ -858,28 +857,13 @@ Geodetic CRS:  WGS 84
 </section>
 <section id="example-averaged-max-temperature-by-month-in-australia-1" class="slide level2">
 <h2><span class="r-fit-text">Example: averaged max temperature by month in Australia</span></h2>
-<div class="r-stack">
-<div class="cell" data-layout-align="center">
-<div class="cell-output-display">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-19-1.png" class="quarto-figure quarto-figure-center" width="1440"></p>
-</figure>
-</div>
-</div>
-</div>
-<p><img data-src="figures/wrong-way-go-back.png" class="fragment" height="450"></p>
-</div>
-</section>
-<section id="example-averaged-max-temperature-by-month-in-australia-2" class="slide level2">
-<h2><span class="r-fit-text">Example: averaged max temperature by month in Australia</span></h2>
 <div class="columns">
 <div class="column" style="width:40%;">
 <div class="cell" data-layout-align="center">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-20-1.png" class="quarto-figure quarto-figure-center" width="384"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-19-1.png" class="quarto-figure quarto-figure-center" width="384"></p>
 </figure>
 </div>
 </div>
@@ -889,14 +873,14 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-21-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-20-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
 </figure>
 </div>
 </div>
 </div>
 </div></div>
 </section>
-<section id="example-averaged-max-temperature-by-month-in-australia-3" class="slide level2">
+<section id="example-averaged-max-temperature-by-month-in-australia-2" class="slide level2">
 <h2><span class="r-fit-text">Example: averaged max temperature by month in Australia</span></h2>
 <div class="columns">
 <div class="column" style="width:50%;">
@@ -922,7 +906,7 @@ Geodetic CRS:  WGS 84
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-23-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-22-1.png" class="quarto-figure quarto-figure-center" width="768"></p>
 </figure>
 </div>
 </div>
@@ -1212,21 +1196,20 @@ attr(,"class")
 </div>
 <div id="tabset-1-2">
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href=""></a>data <span class="sc">%&gt;%</span>                                  <span class="co"># data contain `tavg` and `prcp`</span></span>
-<span id="cb25-2"><a href=""></a>  <span class="fu">var_trans</span>(                              <span class="co"># step 1: variable transformation</span></span>
-<span id="cb25-3"><a href=""></a>    <span class="at">.method =</span> <span class="st">"thornthwaite"</span>,             <span class="co">#         using the thornthwaite function</span></span>
-<span id="cb25-4"><a href=""></a>    <span class="at">.vars =</span> tavg,                         <span class="co">#         on `tavg` </span></span>
-<span id="cb25-5"><a href=""></a>    <span class="at">.new_name =</span> <span class="st">"pet"</span>) <span class="sc">%&gt;%</span>                <span class="co">#         to create a new variable `pet` </span></span>
-<span id="cb25-6"><a href=""></a>  <span class="fu">dim_red</span>(<span class="at">diff =</span> prcp <span class="sc">-</span> pet) <span class="sc">%&gt;%</span>          <span class="co"># step 2: dimension reduction </span></span>
-<span id="cb25-7"><a href=""></a>  <span class="fu">aggregate</span>(                              <span class="co"># step 3: temporal aggregation</span></span>
-<span id="cb25-8"><a href=""></a>    <span class="at">.var =</span> diff,                          <span class="co">#         aggregate `diff` with time scale</span></span>
-<span id="cb25-9"><a href=""></a>    <span class="at">.scale =</span> .scale) <span class="sc">%&gt;%</span>                  <span class="co">#         `.scale` to create `.agg`</span></span>
-<span id="cb25-10"><a href=""></a>  <span class="fu">dist_fit</span>(                               <span class="co"># step 4: distribution fit</span></span>
-<span id="cb25-11"><a href=""></a>    <span class="at">.dist =</span> <span class="fu">dist_gev</span>(),                   <span class="co">#         use the gev distribution </span></span>
-<span id="cb25-12"><a href=""></a>    <span class="at">.var =</span> .agg,                          <span class="co">#         to fit the variable `.agg`</span></span>
-<span id="cb25-13"><a href=""></a>    <span class="at">.method =</span> <span class="st">"lmoms"</span>) <span class="sc">%&gt;%</span>                <span class="co">#         using L-moment        </span></span>
-<span id="cb25-14"><a href=""></a>  <span class="fu">augment</span>(<span class="at">.var =</span> .agg)                    <span class="co"># step 5: normalising </span></span>
-<span id="cb25-15"><a href=""></a>                                          <span class="co">#         find the normal density for `.agg`</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href=""></a>data <span class="sc">%&gt;%</span>                            <span class="co"># data contain `tavg` and `prcp`</span></span>
+<span id="cb25-2"><a href=""></a>  <span class="fu">var_trans</span>(                        <span class="co"># step 1: variable transformation</span></span>
+<span id="cb25-3"><a href=""></a>    <span class="at">.method =</span> <span class="st">"thornthwaite"</span>,       <span class="co">#         using the thornthwaite function</span></span>
+<span id="cb25-4"><a href=""></a>    <span class="at">.vars =</span> tavg,                   <span class="co">#         on `tavg` </span></span>
+<span id="cb25-5"><a href=""></a>    <span class="at">.new_name =</span> <span class="st">"pet"</span>) <span class="sc">%&gt;%</span>          <span class="co">#         to create a new variable `pet` </span></span>
+<span id="cb25-6"><a href=""></a>  <span class="fu">dim_red</span>(<span class="at">diff =</span> prcp <span class="sc">-</span> pet) <span class="sc">%&gt;%</span>    <span class="co"># step 2: dimension reduction </span></span>
+<span id="cb25-7"><a href=""></a>  <span class="fu">aggregate</span>(                              </span>
+<span id="cb25-8"><a href=""></a>    <span class="at">.var =</span> diff,                          </span>
+<span id="cb25-9"><a href=""></a>    <span class="at">.scale =</span> .scale) <span class="sc">%&gt;%</span>                  </span>
+<span id="cb25-10"><a href=""></a>  <span class="fu">dist_fit</span>(                               </span>
+<span id="cb25-11"><a href=""></a>    <span class="at">.dist =</span> <span class="fu">dist_gev</span>(),                   </span>
+<span id="cb25-12"><a href=""></a>    <span class="at">.var =</span> .agg,                          </span>
+<span id="cb25-13"><a href=""></a>    <span class="at">.method =</span> <span class="st">"lmoms"</span>) <span class="sc">%&gt;%</span>                </span>
+<span id="cb25-14"><a href=""></a>  <span class="fu">augment</span>(<span class="at">.var =</span> .agg)                    </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
@@ -1254,7 +1237,7 @@ attr(,"class")
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="index_files/figure-revealjs/unnamed-chunk-28-1.png" class="quarto-figure quarto-figure-center" width="960"></p>
+<p><img data-src="index_files/figure-revealjs/unnamed-chunk-27-1.png" class="quarto-figure quarto-figure-center" width="960"></p>
 </figure>
 </div>
 </div>
@@ -1301,6 +1284,12 @@ attr(,"class")
 </div>
 </div>
 </div>
+</section>
+<section id="global-gender-gap-index-1" class="slide level2">
+<h2>Global Gender Gap Index</h2>
+<center>
+<img data-src="figures/idx-tour-012.png" width="300">
+</center>
 </section>
 <section id="section-3" class="slide level2" data-background-image="figures/idx-tour-static.png" data-background-size="55%" data-background-position="right">
 <h2></h2>
